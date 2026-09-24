@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EssayAI ML — Essay Score Prediction</title>
+  <meta name="description" content="A local educational prototype for essay score prediction with DeBERTa-v3 and heuristic writing suggestions." />
+  <meta name="keywords" content="essay scoring, AI grading, NLP, DeBERTa, automated feedback" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="static/css/styles.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ NAVBAR ══ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="8"  cy="8"  r="3" fill="url(#g1)"/>
+          <circle cx="24" cy="8"  r="3" fill="url(#g1)"/>
+          <circle cx="8"  cy="24" r="3" fill="url(#g1)"/>
+          <circle cx="24" cy="24" r="3" fill="url(#g1)"/>
+          <circle cx="16" cy="16" r="4" fill="url(#g2)"/>
+          <line x1="8"  y1="8"  x2="16" y2="16" stroke="url(#g1)" stroke-width="1.5" opacity="0.6"/>
+          <line x1="24" y1="8"  x2="16" y2="16" stroke="url(#g1)" stroke-width="1.5" opacity="0.6"/>
+          <line x1="8"  y1="24" x2="16" y2="16" stroke="url(#g1)" stroke-width="1.5" opacity="0.6"/>
+          <line x1="24" y1="24" x2="16" y2="16" stroke="url(#g1)" stroke-width="1.5" opacity="0.6"/>
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#00d4ff"/>
+              <stop offset="100%" stop-color="#7b61ff"/>
+            </linearGradient>
+            <radialGradient id="g2">
+              <stop offset="0%" stop-color="#fbbf24"/>
+              <stop offset="100%" stop-color="#f59e0b"/>
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="brand-text">Essay<span class="brand-accent">AI ML</span></span>
+    </a>
+
+    <div class="nav-links">
+      <a href="#scorer" class="nav-link">Score</a>
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#about" class="nav-link">About</a>
+    </div>
+
+    <div class="nav-badge">
+      <span class="pulse-dot"></span>
+      <span>DeBERTa-v3</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ HERO ══ -->
+<section class="hero" id="hero">
+  <div class="hero-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-icon">⚡</span>
+      <span>Powered by Transformer AI</span>
+    </div>
+
+    <h1 class="hero-title">
+      Grade Essays with<br/>
+      <span class="gradient-text">Artificial Intelligence</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      An educational essay-scoring prototype using <strong>DeBERTa-v3</strong>.
+      Explore a local model pipeline and receive basic structure-based writing suggestions.
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat-chip">
+        <span class="stat-num">2,100</span>
+        <span class="stat-label">Synthetic Samples</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-chip">
+        <span class="stat-num">Demo</span>
+        <span class="stat-label">No checkpoint included</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-chip">
+        <span class="stat-num">1–6</span>
+        <span class="stat-label">Score Range</span>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <a href="#scorer" class="btn btn-primary" id="hero-cta-btn">
+        <span>Try It Free</span>
+        <svg class="btn-arrow" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </a>
+      <a href="#about" class="btn btn-ghost">Learn More</a>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="score-card-demo">
+      <div class="scd-header">
+        <div class="scd-dot red"></div>
+        <div class="scd-dot yellow"></div>
+        <div class="scd-dot green"></div>
+        <span class="scd-title">illustrative_demo.txt</span>
+      </div>
+      <pre class="scd-code"><span class="code-kw">Mode: </span>  <span class="code-num">Demo</span>
+<span class="code-kw">Score:</span>  <span class="code-num">—</span> <span class="code-comment">/ 6.0</span>
+<span class="code-kw">Model: </span> <span class="code-num">Not trained</span>
+
+<span class="code-comment">Suggestions use simple heuristics</span>
+<span class="code-warn">Train with suitable labeled data</span></pre>
+      <div class="scd-score-ring">
+        <svg viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#1a1f2e" stroke-width="10"/>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="url(#ringGrad)" stroke-width="10"
+                  stroke-dasharray="327" stroke-dashoffset="98" stroke-linecap="round"
+                  transform="rotate(-90 60 60)" class="ring-progress"/>
+          <text x="60" y="55" text-anchor="middle" fill="#fbbf24" font-size="22" font-weight="700" font-family="Inter">4.7</text>
+          <text x="60" y="73" text-anchor="middle" fill="#6b7280" font-size="11" font-family="Inter">out of 6</text>
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#00d4ff"/>
+              <stop offset="100%" stop-color="#fbbf24"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ FEATURES ══ -->
+<section class="features-section" id="features">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-tag">Capabilities</span>
+      <h2 class="section-title">Everything You Need to <span class="gradient-text">Ace Your Essays</span></h2>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card" data-delay="0">
+        <div class="feature-icon" style="--icon-color: #00d4ff;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Instant AI Scoring</h3>
+        <p class="feature-desc">A DeBERTa-v3 regression pipeline can predict a 1–6 score after you train it on an appropriate dataset.</p>
+      </div>
+
+      <div class="feature-card" data-delay="100">
+        <div class="feature-icon" style="--icon-color: #7b61ff;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">QWK Evaluation</h3>
+        <p class="feature-desc">The training code reports RMSE, quadratic weighted kappa, and accuracy within half a point on its validation split.</p>
+      </div>
+
+      <div class="feature-card" data-delay="200">
+        <div class="feature-icon" style="--icon-color: #fbbf24;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Smart Feedback</h3>
+        <p class="feature-desc">Simple paragraph, sentence-length, and vocabulary-diversity rules produce general writing suggestions.</p>
+      </div>
+
+      <div class="feature-card" data-delay="300">
+        <div class="feature-icon" style="--icon-color: #10b981;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Multi-Sample Dropout</h3>
+        <p class="feature-desc">During training, predictions from five dropout rates are averaged through a shared regression layer.</p>
+      </div>
+
+      <div class="feature-card" data-delay="400">
+        <div class="feature-icon" style="--icon-color: #f43f5e;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Local prototype</h3>
+        <p class="feature-desc">The Flask app runs locally. The pretrained model files are downloaded from Hugging Face when first needed.</p>
+      </div>
+
+      <div class="feature-card" data-delay="500">
+        <div class="feature-icon" style="--icon-color: #06b6d4;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Real-time Metrics</h3>
+        <p class="feature-desc">Epoch metrics are printed during training and saved in a local JSON log.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ SCORER ══ -->
+<section class="scorer-section" id="scorer">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-tag">Live Demo</span>
+      <h2 class="section-title">Score Your <span class="gradient-text">Essay Now</span></h2>
+      <p class="section-subtitle">Paste an essay (50–10,000 characters) to see a score and basic writing suggestions</p>
+    </div>
+
+    <div class="scorer-layout">
+      <!-- Input Panel -->
+      <div class="scorer-input-panel">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <div class="panel-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </div>
+              <span class="panel-title">Your Essay</span>
+            </div>
+            <div class="word-counter" id="wordCounter">0 words</div>
+          </div>
+
+          <textarea
+            id="essayInput"
+            class="essay-textarea"
+            maxlength="10000"
+            placeholder="Paste or type your essay here...
+
+Example: 'Social media has fundamentally transformed the way teenagers communicate and learn. While platforms offer unprecedented opportunities for self-expression...'"
+            spellcheck="false"
+          ></textarea>
+
+          <div class="textarea-footer">
+            <div class="char-count" id="charCount">0 / 10,000 chars</div>
+            <div class="textarea-actions">
+              <button class="action-btn" id="demoBtn" title="Load sample essay">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                </svg>
+                Demo Essay
+              </button>
+              <button class="action-btn" id="clearBtn" title="Clear text">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <button class="score-btn" id="scoreBtn" onclick="scoreEssay()">
+            <div class="score-btn-content">
+              <svg class="score-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span id="scoreBtnText">Score My Essay</span>
+            </div>
+            <div class="score-btn-shimmer"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Panel -->
+      <div class="scorer-results-panel">
+        <!-- Placeholder state -->
+        <div class="results-placeholder" id="resultsPlaceholder">
+          <div class="placeholder-animation">
+            <div class="placeholder-rings">
+              <div class="ph-ring ph-ring-1"></div>
+              <div class="ph-ring ph-ring-2"></div>
+              <div class="ph-ring ph-ring-3"></div>
+            </div>
+            <div class="placeholder-icon">✨</div>
+          </div>
+          <h3>Your Results Appear Here</h3>
+          <p>Paste an essay on the left and click "Score My Essay" to get your AI evaluation</p>
+        </div>
+
+        <!-- Loading state -->
+        <div class="results-loading" id="resultsLoading" style="display:none">
+          <div class="loading-brain">
+            <div class="brain-pulse"></div>
+            <div class="brain-icon">🧠</div>
+          </div>
+          <div class="loading-text">
+            <div class="loading-step active" id="lStep1">Tokenizing essay...</div>
+            <div class="loading-step" id="lStep2">Running DeBERTa encoder...</div>
+            <div class="loading-step" id="lStep3">Applying regression head...</div>
+            <div class="loading-step" id="lStep4">Generating feedback...</div>
+          </div>
+          <div class="loading-bar-container">
+            <div class="loading-bar" id="loadingBar"></div>
+          </div>
+        </div>
+
+        <!-- Actual results -->
+        <div class="results-content" id="resultsContent" style="display:none">
+
+          <!-- Score Ring -->
+          <div class="score-display-section">
+            <div class="score-ring-container">
+              <svg class="score-ring-svg" viewBox="0 0 200 200" id="scoreRingSvg">
+                <defs>
+                  <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00d4ff"/>
+                    <stop offset="100%" stop-color="#fbbf24"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="100" cy="100" r="85" fill="none" stroke="#1a1f2e" stroke-width="14"/>
+                <circle cx="100" cy="100" r="85" fill="none" stroke="url(#scoreGrad)" stroke-width="14"
+                        stroke-dasharray="534" stroke-dashoffset="534" stroke-linecap="round"
+                        transform="rotate(-90 100 100)" id="scoreArc" class="score-arc-animated"/>
+                <!-- Score text -->
+                <text x="100" y="90" text-anchor="middle" fill="#f9fafb" font-size="40" font-weight="800" font-family="Inter" id="scoreTextMain">—</text>
+                <text x="100" y="115" text-anchor="middle" fill="#6b7280" font-size="14" font-family="Inter">out of 6.0</text>
+                <text x="100" y="140" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="Inter" id="scoreLabel">—</text>
+              </svg>
+            </div>
+
+            <div class="score-meta">
+              <div class="meta-row">
+                <div class="meta-item">
+                  <span class="meta-label">Confidence</span>
+                  <span class="meta-value" id="confidenceValue">—</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Processing</span>
+                  <span class="meta-value" id="processingTime">—</span>
+                </div>
+              </div>
+              <div class="score-bar-group" id="scoreBarGroup">
+                <!-- Score breakdown bars filled by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Feedback Cards -->
+          <div class="feedback-section">
+            <div class="feedback-header">
+              <h3 class="feedback-title">
+                <span class="feedback-icon">💬</span>
+                Writing Suggestions
+              </h3>
+              <span class="feedback-count" id="feedbackCount">0 suggestions</span>
+            </div>
+            <div class="feedback-list" id="feedbackList">
+              <!-- Feedback items injected by JS -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════ ARCHITECTURE ══ -->
+<section class="arch-section" id="about">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-tag">Architecture</span>
+      <h2 class="section-title">How the <span class="gradient-text">Model Works</span></h2>
+    </div>
+
+    <div class="arch-flow">
+      <div class="arch-step">
+        <div class="arch-step-num">01</div>
+        <div class="arch-step-icon">📝</div>
+        <h4>Essay Input</h4>
+        <p>Raw text processed through DeBERTa tokenizer. Max 512 tokens with truncation + padding.</p>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step">
+        <div class="arch-step-num">02</div>
+        <div class="arch-step-icon">🔤</div>
+        <h4>DeBERTa Encoder</h4>
+        <p>12-layer transformer generates contextual embeddings capturing grammar, coherence, and semantics.</p>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step">
+        <div class="arch-step-num">03</div>
+        <div class="arch-step-icon">🎯</div>
+        <h4>Multi-Sample Dropout</h4>
+        <p>5 dropout rates (0.1–0.5) applied to [CLS] embedding. Logits averaged → implicit ensemble.</p>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step">
+        <div class="arch-step-num">04</div>
+        <div class="arch-step-icon">⭐</div>
+        <h4>Score + Feedback</h4>
+        <p>Sigmoid regression head outputs score 1–6. Heuristic analyser returns paragraph-level suggestions.</p>
+      </div>
+    </div>
+
+    <div class="arch-tech-stack">
+      <div class="tech-badge">PyTorch 2.2+</div>
+      <div class="tech-badge">HuggingFace Transformers</div>
+      <div class="tech-badge">DeBERTa-v3-base</div>
+      <div class="tech-badge">scikit-learn</div>
+      <div class="tech-badge">AdamW + Cosine LR</div>
+      <div class="tech-badge">Mixed Precision (fp16)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ FOOTER ══ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand-text">Essay<span class="brand-accent">AI ML</span></span>
+      <p>Educational machine learning prototype. Powered by DeBERTa-v3 and PyTorch.</p>
+    </div>
+    <div class="footer-meta">
+    <span>Bundled data: synthetic sample essays</span>
+      <span class="footer-sep">·</span>
+      <span>Model: microsoft/deberta-v3-base</span>
+      <span class="footer-sep">·</span>
+    <span>Model checkpoint: train locally</span>
+    </div>
+  </div>
+</footer>
+
+<script src="static/js/main.js"></script>
+</body>
+</html>
